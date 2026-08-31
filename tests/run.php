@@ -8,6 +8,7 @@ declare(strict_types=1);
  * enabled (php -d ffi.enable=1 tests/run.php).
  */
 
+require __DIR__ . '/../src/Platform.php';
 require __DIR__ . '/../src/Flowdoc.php';
 
 use Flowdoc\NativeParser;
