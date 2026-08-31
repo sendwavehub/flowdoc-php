@@ -1,0 +1,17 @@
+{
+  "_comment": "Manifest for Installer::postInstall(). Keyed by package version, then by Platform::dirName(). Each entry's url must point at a real GitHub Release asset and sha256 must be the exact hash of that asset -- Installer refuses to write a downloaded file whose hash doesn't match. Populate/update this file as part of cutting a release (see .github/workflows/build-native-libs.yml's php-bundle job, which computes these hashes but does not write them here automatically -- promoting them into this file is a deliberate maintainer step, not an autocommit). A platform missing from a version's entry is treated as 'not yet published for this platform' -- Installer skips it with a message, it does not error.",
+  "1.0.0": {
+    "darwin": {
+      "filename": "libflowdoc_core.dylib",
+      "sha256": "1f6f76b1edcc02d18b5729a6e7601f8268aa067346e8d5d092de94f90b9072cc",
+      "url": "https://github.com/jomynn/FlowDoc-Pro-Performance/releases/download/v1.0.0/libflowdoc_core-darwin.dylib",
+      "_note": "Real checksum of this session's local macOS release build (flowdoc-core/target/release/libflowdoc_core.dylib). The url above is not live yet -- no v1.0.0 GitHub release has been cut with this asset attached."
+    },
+    "linux": {
+      "_note": "Not yet built/published -- no linux entry means Installer::postInstall() skips this platform with a message rather than failing."
+    },
+    "windows": {
+      "_note": "Not yet built/published -- same as linux above."
+    }
+  }
+}
