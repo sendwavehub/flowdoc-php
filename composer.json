@@ -14,7 +14,7 @@
     ],
     "support": {
         "issues": "https://github.com/sendwavehub/FlowDoc-Pro-Performance/issues",
-        "source": "https://github.com/jomynn/flowdoc-php"
+        "source": "https://github.com/sendwavehub/flowdoc-php"
     },
     "require": {
         "php": ">=8.1",
