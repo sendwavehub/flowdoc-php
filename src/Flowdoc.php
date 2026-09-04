@@ -57,6 +57,8 @@ final class NativeParser
         void flowdoc_free_string(void* ptr);
         bool flowdoc_parse_binary(const uint8_t* data_ptr, size_t data_len, uint8_t** out_ptr, size_t* out_len);
         void flowdoc_free_buffer(uint8_t* ptr, size_t len);
+        void* flowdoc_parse_compact(const uint8_t* data_ptr, size_t data_len);
+        void* flowdoc_write_compact(const uint8_t* data_ptr, size_t data_len);
         CDEF;
 
     private static ?FFI $ffi = null;
@@ -189,6 +191,86 @@ final class NativeParser
         }
 
         return $records;
+    }
+
+    /**
+     * Parses .flowc ("compact flow", see docs/FORMAT_FLOWC.md) text into an
+     * array of associative arrays (string => string), one per record. Same
+     * shape and FFI discipline as parseFlow(), against
+     * flowdoc_parse_compact() instead of flowdoc_parse().
+     *
+     * @return array<int, array<string, string>>
+     */
+    public static function parseFlowCompact(string $data): array
+    {
+        // Same short-circuit as parseFlow(): the native side rejects a
+        // zero-length buffer allocation, and an empty document has no
+        // records anyway.
+        if ($data === '') {
+            return [];
+        }
+
+        $ffi = self::init();
+        $length = strlen($data);
+
+        $buffer = $ffi->new("uint8_t[$length]", false);
+        FFI::memcpy($buffer, $data, $length);
+
+        $resultPtr = $ffi->flowdoc_parse_compact($buffer, $length);
+        if ($resultPtr === null) {
+            throw new RuntimeException('flowdoc_parse_compact failed: input was not valid UTF-8.');
+        }
+
+        try {
+            $charPtr = $ffi->cast('char*', $resultPtr);
+            $json = FFI::string($charPtr);
+        } finally {
+            $ffi->flowdoc_free_string($resultPtr);
+        }
+
+        /** @var array<int, array<string, string>>|null $records */
+        $records = json_decode($json, true);
+        if (!is_array($records)) {
+            throw new RuntimeException('flowdoc_parse_compact returned malformed JSON: ' . $json);
+        }
+
+        return $records;
+    }
+
+    /**
+     * Serializes an array of associative arrays (string => string), one per
+     * record, into .flowc ("compact flow", see docs/FORMAT_FLOWC.md) text.
+     * JSON-encodes $records and hands it to flowdoc_write_compact(), which
+     * returns the same shape flowdoc_parse_compact() consumes -- so
+     * parseFlowCompact(writeFlowCompact($records)) round-trips.
+     *
+     * @param array<int, array<string, string>> $records
+     */
+    public static function writeFlowCompact(array $records): string
+    {
+        $ffi = self::init();
+        $json = json_encode($records);
+        if ($json === false) {
+            throw new RuntimeException('Failed to JSON-encode records for flowdoc_write_compact.');
+        }
+
+        $length = strlen($json);
+        $buffer = $ffi->new("uint8_t[$length]", false);
+        FFI::memcpy($buffer, $json, $length);
+
+        $resultPtr = $ffi->flowdoc_write_compact($buffer, $length);
+        if ($resultPtr === null) {
+            throw new RuntimeException(
+                'flowdoc_write_compact failed: input was not valid UTF-8 or not a valid JSON array of records.'
+            );
+        }
+
+        try {
+            $charPtr = $ffi->cast('char*', $resultPtr);
+            return FFI::string($charPtr);
+        } finally {
+            $ffi->flowdoc_free_string($resultPtr);
+        }
     }
 
     /**

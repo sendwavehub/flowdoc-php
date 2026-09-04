@@ -22,6 +22,102 @@ $records = NativeParser::parseFlow("Record\n  id: 1\n  name: Test\n");
   `src/Flowdoc.php`): `json_decode()` is a single optimized C-extension
   call, and thousands of small interpreted-PHP `unpack()` calls cost more
   than the JSON round-trip they were meant to avoid.
+- `NativeParser::parseFlowCompact($data)` / `NativeParser::writeFlowCompact($records)`
+  — `.flowc` ("compact flow", see `docs/FORMAT_FLOWC.md`), a denser text
+  sibling of `.flow` with no `Record` header, no indentation, and a blank
+  line separating records. Same `array<int, array<string, string>>` shape
+  and FFI/JSON round-trip discipline as `parseFlow`, over
+  `flowdoc_parse_compact`/`flowdoc_write_compact` instead of `flowdoc_parse`.
+  A pure string-transform API, like `parseFlow` — not file-based like
+  `Flowb::saveFlowb`/`loadFlowb` below.
+- `Flowb::saveFlowb($path, $records)` / `Flowb::loadFlowb($path)` — `.flowb`,
+  the MessagePack-encoded binary counterpart to `.flow`. Same
+  `array<int, array<string, string>>` shape `parseFlow()` returns, just
+  written to/read from disk as MessagePack instead of parsed from
+  `key: value` text. Implemented entirely in pure PHP with
+  [`rybakit/msgpack`](https://github.com/rybakit/msgpack.php) — deliberately
+  independent of `flowdoc-core` and the FFI boundary above (no native
+  library required), matching this repo's finding that PHP's FFI/native
+  path is slower than plain PHP for this kind of encode/decode workload.
+
+```php
+use Flowdoc\Flowb;
+
+Flowb::saveFlowb('data.flowb', [['id' => '1', 'name' => 'Test']]);
+$records = Flowb::loadFlowb('data.flowb');
+// [['id' => '1', 'name' => 'Test']]
+```
+
+```php
+use Flowdoc\NativeParser;
+
+$flowc = NativeParser::writeFlowCompact([['id' => '1', 'name' => 'Test']]);
+// "id:1\nname:Test"
+$records = NativeParser::parseFlowCompact($flowc);
+// [['id' => '1', 'name' => 'Test']]
+```
+
+## Licensing (soft gate)
+
+`NativeParser::parseFlow()` (and every other parse/write method) works
+identically whether or not a license key is configured — there is no
+Pro-exclusive capability gated by this yet. If `FLOWDOC_LICENSE_KEY` is
+set, `Flowdoc\License::status()` validates it against
+`FLOWDOC_LICENSE_SERVER + /api/licenses/validate` (no default server —
+validation is skipped entirely if this isn't set too) and logs a warning
+(`error_log('flowdoc: ...')`) on an invalid key or an unreachable server.
+
+Unlike `bindings/python`'s `license_status()` and `bindings/nodejs`'s
+`licenseStatus()`, this check does **not** fire automatically — PHP has no
+"on import" hook comparable to a Python module's top-level code or a
+Node `require()` call (Composer's PSR-4 autoloading only registers a
+namespace-to-directory mapping; it executes nothing until a caller
+actually calls something), and a typical PHP process is a single
+short-lived CLI script or php-fpm request that may never touch licensing
+at all. So `License::status()` is explicit-only: call it yourself when you
+want the check to run. Its result is still cached for the rest of the
+process, so a long-running worker (RoadRunner, Swoole, a queue consumer)
+that calls it repeatedly only pays the network cost once — call
+`License::resetStatusCache()` to force a fresh check.
+
+```php
+use Flowdoc\License;
+
+$status = License::status();
+// ['checked' => true, 'valid' => true|false|null, 'error' => string|null]
+```
+
+`valid` is `null` when there was nothing to check (no key configured) or
+nothing could be checked (no server configured, or unreachable) — see
+`src/License.php` for the full behavior. Never throws.
+
+In production, set `FLOWDOC_LICENSE_SERVER=https://license-admin.sendwavehub.tech/api`
+(the trailing `/api` is required — see `RELEASING.md`'s "Production
+license server" section for why). There is no default; validation is
+skipped entirely without it.
+
+### Activation
+
+`License::activate(string $activatedBy, ?string $activationIp = null, ?array $metadata = null)`
+is a separate, explicit call — like `status()`, it never runs
+automatically, and it's a mutating call (it flips the license to
+"Activated" server-side, unlike `/validate`'s read-only check). Call it
+once, e.g. on first run/install:
+
+```php
+use Flowdoc\License;
+
+$result = License::activate('install-script');
+// ['success' => true, 'error' => null, 'message' => ..., 'tier' => ..., 'seats' => ...,
+//  'expiresAt' => ..., 'customerId' => ..., 'signedLicenseArtifact' => ...]
+// or, on failure: ['success' => false, 'error' => '...', ...other fields null]
+```
+
+Posts to `FLOWDOC_LICENSE_SERVER + /licenses/<FLOWDOC_LICENSE_KEY>/activate`
+(a single `/api/` segment, since `FLOWDOC_LICENSE_SERVER` is expected to
+already carry one — see `/validate`'s doubled `/api/api/` above). Cache
+`signedLicenseArtifact` yourself if you need it later; this method doesn't
+persist anything. Never throws.
 
 ## Requirements
 
