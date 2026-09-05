@@ -1,5 +1,22 @@
 {
   "_comment": "Manifest for Installer::postInstall(). Keyed by package version, then by Platform::dirName(). Each entry's url must point at a real GitHub Release asset and sha256 must be the exact hash of that asset -- Installer refuses to write a downloaded file whose hash doesn't match. Populate/update this file as part of cutting a release (see .github/workflows/build-native-libs.yml's php-bundle job, which computes these hashes but does not write them here automatically -- promoting them into this file is a deliberate maintainer step, not an autocommit). A platform missing from a version's entry is treated as 'not yet published for this platform' -- Installer skips it with a message, it does not error.",
+  "1.1.1": {
+    "darwin": {
+      "filename": "libflowdoc_core.dylib",
+      "sha256": "a6a57c18652c53970bf2b9f0d85dd5544b2ca3280d7aec068abddae9b3e5941b",
+      "url": "https://github.com/sendwavehub/flowdoc-php/releases/download/v1.1.1/libflowdoc_core-darwin.dylib"
+    },
+    "linux": {
+      "filename": "libflowdoc_core.so",
+      "sha256": "280d8253185937a6eef0628f63d707f10dc2849ca5a679ef453f80781ed428a7",
+      "url": "https://github.com/sendwavehub/flowdoc-php/releases/download/v1.1.1/libflowdoc_core-linux.so"
+    },
+    "windows": {
+      "filename": "flowdoc_core.dll",
+      "sha256": "3b416a1f3977ca85bf67e81d16227710630d2a734c9f209433fa784513f85696",
+      "url": "https://github.com/sendwavehub/flowdoc-php/releases/download/v1.1.1/libflowdoc_core-windows.dll"
+    }
+  },
   "1.1.0": {
     "_note": "Hosted on the public sendwavehub/flowdoc-php mirror, not the monorepo -- the monorepo (sendwavehub/FlowDoc-Pro-Performance) is currently private, so release assets there 404 for real anonymous `composer install` users. The mirror is already what Packagist resolves this package from, so it's reachable regardless of the monorepo's visibility. If the monorepo ever goes public, future versions could move back to hosting there per this file's original convention -- just don't assume it's public without checking first.",
     "darwin": {
