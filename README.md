@@ -1,6 +1,6 @@
 # flowdoc (PHP)
 
-PHP FFI binding for [FlowDoc](https://github.com/jomynn/FlowDoc-Pro-Performance)
+PHP FFI binding for [FlowDoc](https://github.com/sendwavehub/flowdoc-bindings)
 — a fast serialization format: indent-delimited `key: value` records, parsed
 by a shared Rust core (`flowdoc-core`) linked over PHP's `FFI` extension.
 
@@ -126,10 +126,11 @@ persist anything. Never throws.
 - The native `flowdoc_core` library, resolved in this order:
   1. **`FLOWDOC_NATIVE_LIB_PATH` environment variable**, set to the full
      path of the library file — the documented way to point this package
-     at a library you've built yourself. Build one with:
+     at a library you've built yourself. This requires access to the
+     private `flowdoc-core` source (not available publicly) and a Rust
+     toolchain:
      ```bash
-     git clone https://github.com/jomynn/FlowDoc-Pro-Performance
-     cd FlowDoc-Pro-Performance/flowdoc-core
+     cd flowdoc-core
      cargo build --release
      export FLOWDOC_NATIVE_LIB_PATH=$(pwd)/target/release/libflowdoc_core.dylib  # .so on Linux, flowdoc_core.dll on Windows
      ```
@@ -145,16 +146,15 @@ persist anything. Never throws.
      version, or a checksum mismatch all just skip with a message and
      fall through to options 3/4 below. Set
      `FLOWDOC_SKIP_NATIVE_DOWNLOAD=1` to skip it outright (offline CI,
-     restricted environments). No release has been cut yet, so today this
-     step always skips with "no published native library ... yet" — see
-     `native-checksums.json`'s own comments for exactly what's missing.
+     restricted environments). This is the normal path for a real
+     `composer install` — see `native-checksums.json` for exactly which
+     versions/platforms currently have a published native library.
   3. A system library directory (`/usr/local/lib`, `/opt/homebrew/lib`,
      `/usr/lib`), under the OS-standard filename
      (`libflowdoc_core.so`/`.dylib` or `flowdoc_core.dll`).
-  4. This monorepo's own `flowdoc-core/target/release/` build output —
-     only reachable when this package is used from inside the
-     `FlowDoc-Pro-Performance` repo itself (e.g. this binding's own test
-     suite), not as an installed Composer dependency.
+  4. This binding's own private source checkout's `flowdoc-core/target/release/`
+     build output — only reachable from inside that checkout (e.g. this
+     binding's own test suite), not as an installed Composer dependency.
 
   If none of these resolve, `NativeParser` throws a `RuntimeException`
   naming the path it tried and how to fix it.
@@ -181,6 +181,6 @@ composer install
 php -d ffi.enable=1 vendor/bin/phpunit tests/
 ```
 
-See the [main repository](https://github.com/jomynn/FlowDoc-Pro-Performance)
-for the format specification, benchmarks, and the other six language
-bindings (Rust, Go, Python, Node.js, C#, C++).
+See the [FlowDoc project](https://github.com/sendwavehub/flowdoc-bindings)
+for the format overview, benchmark numbers, and links to every other
+language binding (Rust, Go, Python, Node.js, C#, C++).

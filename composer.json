@@ -4,7 +4,7 @@
     "type": "library",
     "license": "MIT",
     "keywords": ["serialization", "parser", "flowdoc", "ffi", "rust"],
-    "homepage": "https://github.com/sendwavehub/FlowDoc-Pro-Performance/tree/main/bindings/php",
+    "homepage": "https://github.com/sendwavehub/flowdoc-bindings",
     "authors": [
         {
             "name": "Pornchai Nimnoi",
@@ -13,7 +13,7 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/sendwavehub/FlowDoc-Pro-Performance/issues",
+        "issues": "https://github.com/sendwavehub/flowdoc-bindings/issues",
         "source": "https://github.com/sendwavehub/flowdoc-php"
     },
     "require": {
